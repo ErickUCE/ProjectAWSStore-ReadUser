@@ -26,6 +26,7 @@ router.post('/sync-create', async (req, res) => {
 });
 
 
+
 // ✅ Endpoint para sincronizar actualización desde el microservicio de Update
 router.post('/sync-update', async (req, res) => {
     console.log('📌 Solicitud recibida en /sync-update:', req.body);
@@ -46,5 +47,30 @@ router.post('/sync-update', async (req, res) => {
         res.status(500).send({ error: 'Failed to sync user update' });
     }
 });
+
+
+
+
+// ✅ Endpoint para sincronizar eliminación de usuarios desde el microservicio de Delete
+router.post('/sync-delete', async (req, res) => {
+    console.log('📌 Solicitud recibida en /sync-delete:', req.body);
+    const { id } = req.body;
+
+    try {
+        const user = await User.findByPk(id);
+        if (user) {
+            await user.destroy();
+            console.log(`✅ User con ID ${id} eliminado en la base de Read`);
+        } else {
+            console.log(`⚠️ User con ID ${id} no encontrado en la base de Read`);
+        }
+
+        res.status(200).send({ message: `User con ID ${id} eliminado correctamente en Read` });
+    } catch (error) {
+        console.error('❌ Error sincronizando eliminación de user en Read:', error);
+        res.status(500).send({ error: 'Failed to sync user delete' });
+    }
+});
+
 
 module.exports = router;

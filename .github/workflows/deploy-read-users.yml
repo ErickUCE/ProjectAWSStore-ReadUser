@@ -1,0 +1,54 @@
+name: Deploy ReadUser to AWS EC2
+
+on:
+  push:
+    branches:
+      - test
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 🛎️ Checkout repository
+      uses: actions/checkout@v3
+
+    - name: 🐳 Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: 📦 Build Docker image
+      run: |
+        docker build -t erickuce/read-users:latest .
+    
+    - name: 🚀 Push Docker image to Docker Hub
+      run: |
+        docker push erickuce/read-users:latest
+
+    - name: 🔑 Connect to EC2 and deploy container
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST_READ }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Iniciar sesión en Docker Hub
+          sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+          # Descargar la última imagen desde Docker Hub
+          sudo docker pull erickuce/read-users:latest
+
+          # Detener y eliminar el contenedor anterior si existe
+          sudo docker stop read-users-container || true && sudo docker rm read-users-container || true
+
+          # Crear el archivo .env desde el secreto de GitHub
+          echo -e "${{ secrets.ENV_FILE_READ }}" > .env
+
+          # Verificar si el archivo .env se creó correctamente
+          cat .env
+
+          # Ejecutar el contenedor con el archivo .env
+          sudo docker run -d --name read-users-container --env-file .env -p 5006:5006 -p 4006:4006 erickuce/read-users:latest

@@ -6,8 +6,16 @@ const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
 const resolvers = require('./graphql/resolvers');
 const providerRoutes = require('./routes/userRoutes');
+const cors = require('cors');
+
 
 const app = express();
+app.use(cors({
+    origin: 'http://localhost:3000', // Permite solicitudes solo desde el frontend
+    methods: 'GET,POST,PUT,DELETE',
+    allowedHeaders: 'Content-Type,Authorization'
+}));
+
 app.use(bodyParser.json());
 app.use(providerRoutes); // ✅ Registrar las rutas
 
